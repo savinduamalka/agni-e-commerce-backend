@@ -62,7 +62,7 @@ This is the backend repository for the E-Commerce web application for a cosmetic
 
 5. The backend will be running at:
    ```
-http://localhost:5000
+   http://localhost:5000
 ```
 
 ## API Endpoints
