@@ -1,8 +1,11 @@
 import dotenv from 'dotenv';
 import express from 'express';
 import mongoose from 'mongoose';
+import userRouter from './routes/userRoute.js';
 
 const app= express();
+
+app.use(express.json());
 
 dotenv.config();
 
@@ -27,6 +30,8 @@ mongoose.connect(connection).then(
     console.log("Database connection failed");
   }
 )
+
+app.use("/api/users", userRouter);
 
 export default app;
 
