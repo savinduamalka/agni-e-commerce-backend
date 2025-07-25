@@ -30,7 +30,6 @@ const userSchema = mongoose.Schema({
     },
     avatar: {
         type: String,
-        required: false,
         default: "https://static.thenounproject.com/png/5100711-200.png"
     },
     address: [{
@@ -39,12 +38,10 @@ const userSchema = mongoose.Schema({
         state: String,
         country: String,
         postalCode: String,
-        required: false
     }],
     phone: {
         type: String,
         trim: true,
-        required: false
     },
 });
 
