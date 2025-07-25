@@ -7,7 +7,7 @@ const app= express();
 
 app.use(express.json());
 
-dotenv.config();
+dotenv.config({ path: './src/.env' });
 
 const connection = process.env.MONGODB_URL;
 
