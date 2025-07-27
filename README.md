@@ -1,6 +1,6 @@
-# E-Commerce Backend - Cosmetic Shop
+# E-Commerce Backend - Online Store
 
-This is the backend repository for the E-Commerce web application for a cosmetic shop. Built using the **MERN Stack (MongoDB, Express, React, Node.js)**, this backend provides RESTful APIs to manage users, products, orders, reviews, and admin functionalities.
+This is the backend repository for the E-Commerce web application for a Online Store. Built using the **MERN Stack (MongoDB, Express, React, Node.js)**, this backend provides RESTful APIs to manage users, products, orders, reviews, and admin functionalities.
 
 ## Features
 
@@ -39,13 +39,13 @@ This is the backend repository for the E-Commerce web application for a cosmetic
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/savinduamalka/cosmetics-e-commerce-backend.git
-   cd cosmetics-e-commerce-backend
+   git clone https://github.com/savinduamalka/agni-e-commerce-backend.git
+   cd agni-e-commerce-backend
    ```
 
 2. Install dependencies:
    ```bash
-   npm install
+   pnpm install
    ```
 
 3. Create a `.env` file in the root directory and add the following:
@@ -57,7 +57,7 @@ This is the backend repository for the E-Commerce web application for a cosmetic
 
 4. Start the server:
    ```bash
-   npm start
+   pnpm start
    ```
 
 5. The backend will be running at:
