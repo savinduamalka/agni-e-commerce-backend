@@ -11,7 +11,7 @@ dotenv.config({ path: './src/.env' });
 
 const connection = process.env.MONGODB_URL;
 
-const PORT=3000;
+const PORT=process.env.PORT;
 
 app.get('/', (req, res) => {
   res.send('Welcome to the Cosmetics API!');
