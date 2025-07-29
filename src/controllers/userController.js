@@ -6,6 +6,8 @@ dotenv.config();
 
 export function createUser(req, res) {
 
+    console.log("Request body:", req.body);
+
     const hashedPassword = bcrypt.hashSync(req.body.password, 10);
 
     const user = new User({
@@ -22,6 +24,7 @@ export function createUser(req, res) {
             user: user
         })
     }).catch((err) => {
+        console.error("User creation error:", err);
         res.status(500).json({
             message: "User creation failed",
             error: err

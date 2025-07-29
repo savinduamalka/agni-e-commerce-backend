@@ -1,4 +1,5 @@
 import dotenv from 'dotenv';
+dotenv.config({ path: '.env' });
 import express from 'express';
 import mongoose from 'mongoose';
 import userRouter from './routes/userRoute.js';
@@ -7,7 +8,6 @@ const app= express();
 
 app.use(express.json());
 
-dotenv.config({ path: './src/.env' });
 
 const connection = process.env.MONGODB_URL;
 
