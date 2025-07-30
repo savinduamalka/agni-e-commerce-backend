@@ -48,21 +48,23 @@ export function loginUser(req, res) {
             } else {
                 const isPasswordCorrect = bcrypt.compareSync(password, user.password)
                 if (isPasswordCorrect) {
+                    const userData = {
+                        email: user.email,
+                        firstName: user.firstName,
+                        lastName: user.lastName,
+                        role: user.role,
+                        avatar: user.avatar,
+                    };
                     const token = jwt.sign(
-                        {
-                            email: user.email,
-                            firstName: user.firstName,
-                            lastName: user.lastName,
-                            role: user.role,
-                            avatar: user.avatar,
-                        },
-                        process.env.JWT_KEY
-                    )
+                        userData,
+                        process.env.JWT_KEY,
+                        { expiresIn: "48h" }
+                    );
                     res.json({
                         message: "Login successful",
                         token: token,
-                        role: user.role
-                    })
+                        user: userData
+                    });
 
                 } else {
                     res.status(401).json({
