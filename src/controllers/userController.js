@@ -74,3 +74,15 @@ export function loginUser(req, res) {
             }
         }
     )}
+
+    export function getCurrentUser(req,res){
+        if(req.user == null){
+            res.status(403).json({
+                message: "Please login to get user details",
+            });
+            return;
+        }
+        res.json({
+            user : req.user
+        })
+    }
