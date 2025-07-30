@@ -1,5 +1,5 @@
 import dotenv from 'dotenv';
-dotenv.config({ path: '.env' });
+dotenv.config({ path: './src/.env' });
 import express from 'express';
 import mongoose from 'mongoose';
 import userRouter from './routes/userRoute.js';
@@ -13,9 +13,6 @@ const connection = process.env.MONGODB_URL;
 
 const PORT=process.env.PORT;
 
-app.get('/', (req, res) => {
-  res.send('Welcome to the Cosmetics API!');
-});
 
 app.listen(PORT, () => {
   console.log(`Server is Running on ${PORT}`);
@@ -34,11 +31,3 @@ mongoose.connect(connection).then(
 app.use("/api/users", userRouter);
 
 export default app;
-
-
-
-
-
-
-
-
