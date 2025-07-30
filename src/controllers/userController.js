@@ -33,6 +33,9 @@ export function createUser(req, res) {
 }
 
 export function loginUser(req, res) {
+    if (!req.body.email || !req.body.password) {
+        return res.status(400).json({ message: 'Email and password are required.' });
+    }
     const email = req.body.email
     const password = req.body.password
 
