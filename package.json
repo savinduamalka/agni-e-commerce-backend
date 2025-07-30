@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/savinduamalka/cosmetics-e-commerce-backend.git"
+    "url": "git+https://github.com/savinduamalka/agni-e-commerce-backend.git"
   },
   "license": "ISC",
   "author": "",
@@ -15,7 +15,6 @@
   },
   "dependencies": {
     "bcrypt": "^6.0.0",
-    "cosmetics": "file:",
     "dotenv": "^16.4.7",
     "express": "^5.1.0",
     "jsonwebtoken": "^9.0.2",
