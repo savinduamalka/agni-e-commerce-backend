@@ -2,6 +2,7 @@ import bcrypt from "bcrypt";
 import User from "../models/userModel.js";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
+import axios from "axios";
 dotenv.config();
 
 const generateToken = (user) => {
@@ -102,4 +103,55 @@ export function getCurrentUser(req,res){
     })
 }
 
+export async function loginWithGoogle(req, res) {
+    const { accessToken } = req.body;
 
+    if (!accessToken) {
+        return res.status(401).json({ message: "Access token is required" });
+    }
+
+    try {
+        const response = await axios.get("https://www.googleapis.com/oauth2/v3/userinfo", {
+            headers: {
+                Authorization: `Bearer ${accessToken}`
+            }
+        });
+
+        const googleUser = response.data;
+
+        let user = await User.findOne({ email: googleUser.email });
+
+        if (!user) {
+            user = new User({
+                email: googleUser.email,
+                firstName: googleUser.given_name,
+                lastName: googleUser.family_name,
+                avatar: googleUser.picture,
+            });
+            await user.save();
+        }
+
+        const token = generateToken(user);
+        
+        const userData = {
+             email: user.email,
+             firstName: user.firstName,
+             lastName: user.lastName,
+             role: user.role,
+             avatar: user.avatar,
+        }
+
+        res.json({
+            message: "Login successful",
+            token: token,
+            user: userData
+        });
+
+    } catch (error) {
+        console.error("Google login error:", error);
+        if (error.response && error.response.status === 401) {
+            return res.status(401).json({ message: "Invalid Google access token" });
+        }
+        res.status(500).json({ message: "Internal server error" });
+    }
+}

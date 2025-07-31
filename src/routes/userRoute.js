@@ -1,11 +1,12 @@
 import express from "express";
-import { createUser, getCurrentUser, loginUser } from "../controllers/userController.js";
+import { createUser, getCurrentUser, loginUser, loginWithGoogle } from "../controllers/userController.js";
 import verifyJWT from "../middleware/auth.js";
 
 const userRouter = express.Router();
 
 userRouter.post("/", createUser);
 userRouter.post("/login", loginUser);
+userRouter.post("/login/google", loginWithGoogle);
 
 
 userRouter.get("/me", verifyJWT, getCurrentUser);
