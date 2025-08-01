@@ -1,5 +1,13 @@
 import express from "express";
-import { createUser, getCurrentUser, loginUser, loginWithGoogle, sendOTP } from "../controllers/userController.js";
+import { 
+    createUser, 
+    getCurrentUser, 
+    loginUser, 
+    loginWithGoogle, 
+    verifyEmail,
+    requestPasswordReset,
+    resetPassword
+} from "../controllers/userController.js";
 import { verifyJWT, isAdmin } from "../middleware/auth.js";
 
 const userRouter = express.Router();
@@ -7,7 +15,9 @@ const userRouter = express.Router();
 userRouter.post("/", createUser);
 userRouter.post("/login", loginUser);
 userRouter.post("/login/google", loginWithGoogle);
-userRouter.post("/send-otp", sendOTP);
+userRouter.post("/verify-email", verifyEmail);
+userRouter.post("/request-password-reset", requestPasswordReset);
+userRouter.post("/reset-password", resetPassword);
 
 
 userRouter.get("/me", verifyJWT, getCurrentUser);
