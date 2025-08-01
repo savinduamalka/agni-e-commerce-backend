@@ -1,6 +1,7 @@
 import jwt from "jsonwebtoken";
+import User from "../models/userModel.js";
 
-export function verifyJWT(req, res, next) {
+export async function verifyJWT(req, res, next) {
     const header = req.header("Authorization");
 
     if (!header || !header.startsWith("Bearer ")) {
@@ -9,14 +10,23 @@ export function verifyJWT(req, res, next) {
 
     const token = header.replace("Bearer ", "");
 
-    jwt.verify(token, process.env.JWT_KEY, (err, decoded) => {
-        if (err) {
-            return res.status(401).json({ message: "Invalid token." });
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_KEY);
+        const user = await User.findOne({ email: decoded.email });
+
+        if (!user) {
+            return res.status(401).json({ message: "Invalid token. User not found." });
+        }
+
+        if (user.isBlocked) {
+            return res.status(403).json({ message: "Access denied. Your account has been blocked." });
         }
 
         req.user = decoded;
         next();
-    });
+    } catch (err) {
+        return res.status(401).json({ message: "Invalid token." });
+    }
 }
 
 export function isAdmin(req, res, next) {
