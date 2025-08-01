@@ -423,3 +423,48 @@ export async function unblockUser(req, res) {
         res.status(500).json({ message: "Internal server error" });
     }
 }
+export async function getAllUsers(req, res) {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    const searchQuery = req.query.search || '';
+
+    let filter = {};
+    if (searchQuery) {
+      filter = {
+        $or: [
+          { firstName: { $regex: searchQuery, $options: 'i' } },
+          { lastName: { $regex: searchQuery, $options: 'i' } },
+          { email: { $regex: searchQuery, $options: 'i' } },
+        ],
+      };
+    }
+
+    const totalUsers = await User.countDocuments(filter);
+
+    const users = await User.find(filter)
+      .select('-password')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+
+    const totalPages = Math.ceil(totalUsers / limit);
+
+    res.status(200).json({
+      message: 'Users retrieved successfully',
+      users,
+      pagination: {
+        currentPage: page,
+        totalPages,
+        totalUsers,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1,
+      },
+    });
+  } catch (error) {
+    console.error('Get all users error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+}

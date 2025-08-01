@@ -12,7 +12,8 @@ import {
     changePassword,
     deleteUser,
     blockUser,
-    unblockUser
+    unblockUser,
+    getAllUsers
 } from "../controllers/userController.js";
 import { verifyJWT, isAdmin } from "../middleware/auth.js";
 
@@ -36,6 +37,7 @@ userRouter.put("/change-password", verifyJWT, changePassword);
 // Admin routes
 userRouter.put("/block/:email", verifyJWT, isAdmin, blockUser);
 userRouter.put("/unblock/:email", verifyJWT, isAdmin, unblockUser);
+userRouter.get("/all", verifyJWT, isAdmin, getAllUsers);
 userRouter.get("/admin-only", verifyJWT, isAdmin, (req, res) => {
     res.json({ message: "Welcome, admin!" });
 });
