@@ -27,6 +27,11 @@ const userSchema = mongoose.Schema({
         required: true,
         default: false
     },
+    isVerified: {
+        type: Boolean,
+        required: true,
+        default: false
+    },
     avatar: {
         type: String,
         default: "https://static.thenounproject.com/png/5100711-200.png"
