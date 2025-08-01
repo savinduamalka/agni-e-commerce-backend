@@ -340,3 +340,40 @@ export async function updateUser(req, res) {
         res.status(500).json({ message: "Internal server error" });
     }
 }
+
+export async function changePassword(req, res) {
+    try {
+        const { oldPassword, newPassword } = req.body;
+        const user = await User.findOne({ email: req.user.email });
+
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        if (!oldPassword || !newPassword) {
+            return res.status(400).json({ message: "Old and new passwords are required" });
+        }
+
+        const isPasswordCorrect = bcrypt.compareSync(oldPassword, user.password);
+
+        if (!isPasswordCorrect) {
+            return res.status(401).json({ message: "Invalid old password" });
+        }
+
+        if (!validator.isStrongPassword(newPassword)) {
+            return res.status(400).json({
+                message: "New password is not strong enough. It should be at least 8 characters long and include a mix of uppercase letters, lowercase letters, numbers, and symbols.",
+            });
+        }
+
+        const hashedPassword = bcrypt.hashSync(newPassword, 10);
+        user.password = hashedPassword;
+        await user.save();
+
+        res.status(200).json({ message: "Password changed successfully" });
+
+    } catch (error) {
+        console.error("Change password error:", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+}
