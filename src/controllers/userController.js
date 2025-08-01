@@ -2,8 +2,9 @@ import bcrypt from "bcrypt";
 import User from "../models/userModel.js";
 import jwt from "jsonwebtoken";
 import axios from "axios";
-import nodemailer from "nodemailer";
 import validator from "validator";
+import { sendOTP } from "../utils/emailUtils.js";
+import OTP from "../models/otpModel.js";
 
 const generateToken = (user) => {
     const userData = {
@@ -12,6 +13,7 @@ const generateToken = (user) => {
         lastName: user.lastName,
         role: user.role,
         avatar: user.avatar,
+        isVerified: user.isVerified,
     };
     return jwt.sign(
         userData,
@@ -61,17 +63,18 @@ export async function createUser(req, res) {
 
         const savedUser = await user.save();
         
-        const token = generateToken(savedUser);
+        await sendOTP({
+            email: savedUser.email,
+            subject: "Verify your email address",
+            message: "Please use the following OTP to verify your email address.",
+        });
 
         res.status(201).json({
-            message: "User created successfully",
-            token: token,
+            message: "User created successfully. Please check your email to verify your account.",
             user: {
                 email: savedUser.email,
                 firstName: savedUser.firstName,
                 lastName: savedUser.lastName,
-                role: savedUser.role,
-                avatar: savedUser.avatar,
             }
         });
     } catch (err) {
@@ -94,6 +97,10 @@ export async function loginUser(req, res) {
             return res.status(404).json({ message: "User not found" });
         }
         
+        if (!user.isVerified) {
+            return res.status(401).json({ message: "Email not verified. Please verify your email to login." });
+        }
+
         if (!user.password) {
              return res.status(401).json({ message: "Invalid credentials. Please try signing in with Google." });
         }
@@ -106,18 +113,9 @@ export async function loginUser(req, res) {
 
         const token = generateToken(user);
         
-        const userData = {
-            email: user.email,
-            firstName: user.firstName,
-            lastName: user.lastName,
-            role: user.role,
-            avatar: user.avatar,
-        };
-
         res.json({
             message: "Login successful",
             token: token,
-            user: userData
         });
     } catch (error) {
         console.error("Login error:", error);
@@ -161,24 +159,21 @@ export async function loginWithGoogle(req, res) {
                 firstName: googleUser.given_name,
                 lastName: googleUser.family_name,
                 avatar: googleUser.picture,
+                isVerified: true,
             });
             await user.save();
+        } else {
+            if (!user.isVerified) {
+                user.isVerified = true;
+                await user.save();
+            }
         }
 
         const token = generateToken(user);
         
-        const userData = {
-             email: user.email,
-             firstName: user.firstName,
-             lastName: user.lastName,
-             role: user.role,
-             avatar: user.avatar,
-        }
-
         res.json({
             message: "Login successful",
             token: token,
-            user: userData
         });
 
     } catch (error) {
@@ -190,35 +185,104 @@ export async function loginWithGoogle(req, res) {
     }
 }
 
-export async function sendOTP(req, res){
-    const transporter=nodemailer.createTransport({
-        service: "gmail",
-        host: "smtp.gmail.com",
-        port: 587,
-        secure: false,
-        requireTLS: true,
-        authMethod: "PLAIN",
-        auth: {
-            user: process.env.EMAIL_USER,
-            pass: process.env.EMAIL_PASS,
-        }
-    });
+export async function verifyEmail(req, res) {
+    const { email, otp } = req.body;
 
-    const randomOTP=Math.floor(100000+Math.random()*900000);
-    if(!req.body || !req.body.email){
-        return res.status(400).json({message:"Email is required"});
+    if (!email || !otp) {
+        return res.status(400).json({ message: "Email and OTP are required" });
     }
-    const email=req.body.email;
-    const message={
-        from: process.env.EMAIL_USER,
-        to: email,
-        subject: "OTP for login",
-        text: `Your OTP for login is ${randomOTP}`,
+
+    try {
+        const otpRecord = await OTP.findOne({ email });
+
+        if (!otpRecord) {
+            return res.status(400).json({ message: "Invalid OTP" });
+        }
+
+        const isMatch = await bcrypt.compare(otp, otpRecord.otp);
+
+        if (!isMatch) {
+            return res.status(400).json({ message: "Invalid OTP" });
+        }
+
+        await User.updateOne({ email }, { isVerified: true });
+        await OTP.deleteOne({ email });
+
+        const user = await User.findOne({ email });
+        const token = generateToken(user);
+
+        res.status(200).json({ 
+            message: "Email verified successfully",
+            token,
+        });
+
+    } catch (error) {
+        console.error("Email verification error:", error);
+        res.status(500).json({ message: "Internal server error" });
     }
-    transporter.sendMail(message).then((info)=>{
-        res.status(200).json({message:"OTP sent successfully",otp:randomOTP});
-    }).catch((err)=>{
-        console.error("Failed to send email:", err);
-        res.status(500).json({message:"Failed to send OTP"});
-    })
+}
+
+export async function requestPasswordReset(req, res) {
+    const { email } = req.body;
+
+    if (!email) {
+        return res.status(400).json({ message: "Email is required" });
+    }
+
+    try {
+        const user = await User.findOne({ email });
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        await sendOTP({
+            email,
+            subject: "Reset your password",
+            message: "Please use the following OTP to reset your password.",
+        });
+
+        res.status(200).json({ message: "Password reset OTP sent successfully. Please check your email." });
+
+    } catch (error) {
+        console.error("Request password reset error:", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+}
+
+export async function resetPassword(req, res) {
+    const { email, otp, newPassword } = req.body;
+
+    if (!email || !otp || !newPassword) {
+        return res.status(400).json({ message: "Email, OTP, and new password are required" });
+    }
+
+    if (!validator.isStrongPassword(newPassword)) {
+        return res.status(400).json({
+            message: "Password is not strong enough. It should be at least 8 characters long and include a mix of uppercase letters, lowercase letters, numbers, and symbols.",
+        });
+    }
+
+    try {
+        const otpRecord = await OTP.findOne({ email });
+
+        if (!otpRecord) {
+            return res.status(400).json({ message: "Invalid OTP" });
+        }
+
+        const isMatch = await bcrypt.compare(otp, otpRecord.otp);
+
+        if (!isMatch) {
+            return res.status(400).json({ message: "Invalid OTP" });
+        }
+
+        const hashedPassword = bcrypt.hashSync(newPassword, 10);
+        await User.updateOne({ email }, { password: hashedPassword });
+        await OTP.deleteOne({ email });
+
+        res.status(200).json({ message: "Password reset successfully" });
+
+    } catch (error) {
+        console.error("Password reset error:", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
 }
