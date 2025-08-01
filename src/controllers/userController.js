@@ -1,9 +1,8 @@
 import bcrypt from "bcrypt";
 import User from "../models/userModel.js";
 import jwt from "jsonwebtoken";
-import dotenv from "dotenv";
 import axios from "axios";
-dotenv.config();
+
 
 const generateToken = (user) => {
     const userData = {
@@ -20,32 +19,54 @@ const generateToken = (user) => {
     );
 };
 
-export function createUser(req, res) {
+export async function createUser(req, res) {
+    const { email, firstName, lastName, password, avatar } = req.body;
 
-    console.log("Request body:", req.body);
+    if (!email || !firstName || !lastName || !password) {
+        return res.status(400).json({
+            message: "All fields are required",
+        });
+    }
 
-    const hashedPassword = bcrypt.hashSync(req.body.password, 10);
+    try {
+        const existingUser = await User.findOne({ email });
+        if (existingUser) {
+            return res.status(409).json({
+                message: "User already exists",
+            });
+        }
 
-    const user = new User({
-        email: req.body.email,
-        firstName: req.body.firstName,
-        lastName: req.body.lastName,
-        password: hashedPassword,
-        avatar: req.body.avatar,
-    })
+        const hashedPassword = bcrypt.hashSync(password, 10);
 
-    user.save().then((user) => {
+        const user = new User({
+            email,
+            firstName,
+            lastName,
+            password: hashedPassword,
+            avatar,
+        });
+
+        const savedUser = await user.save();
+        
+        const token = generateToken(savedUser);
+
         res.status(201).json({
             message: "User created successfully",
-            user: user
-        })
-    }).catch((err) => {
+            token: token,
+            user: {
+                email: savedUser.email,
+                firstName: savedUser.firstName,
+                lastName: savedUser.lastName,
+                role: savedUser.role,
+                avatar: savedUser.avatar,
+            }
+        });
+    } catch (err) {
         console.error("User creation error:", err);
         res.status(500).json({
             message: "User creation failed",
-            error: err
-        })
-    })
+        });
+    }
 }
 
 export async function loginUser(req, res) {
@@ -155,3 +176,4 @@ export async function loginWithGoogle(req, res) {
         res.status(500).json({ message: "Internal server error" });
     }
 }
+
