@@ -6,7 +6,8 @@ import {
     loginWithGoogle, 
     verifyEmail,
     requestPasswordReset,
-    resetPassword
+    resetPassword,
+    resendVerificationEmail
 } from "../controllers/userController.js";
 import { verifyJWT, isAdmin } from "../middleware/auth.js";
 
@@ -18,6 +19,7 @@ userRouter.post("/login/google", loginWithGoogle);
 userRouter.post("/verify-email", verifyEmail);
 userRouter.post("/request-password-reset", requestPasswordReset);
 userRouter.post("/reset-password", resetPassword);
+userRouter.post("/resend-verification-email", resendVerificationEmail);
 
 
 userRouter.get("/me", verifyJWT, getCurrentUser);

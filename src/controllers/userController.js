@@ -222,6 +222,37 @@ export async function verifyEmail(req, res) {
     }
 }
 
+export async function resendVerificationEmail(req, res) {
+    const { email } = req.body;
+
+    if (!email) {
+        return res.status(400).json({ message: "Email is required" });
+    }
+
+    try {
+        const user = await User.findOne({ email });
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        if (user.isVerified) {
+            return res.status(400).json({ message: "Email is already verified" });
+        }
+
+        await sendOTP({
+            email,
+            subject: "Verify your email address",
+            message: "Please use the following OTP to verify your email address.",
+        });
+
+        res.status(200).json({ message: "Verification email sent successfully. Please check your email." });
+
+    } catch (error) {
+        console.error("Resend verification email error:", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+}
+
 export async function requestPasswordReset(req, res) {
     const { email } = req.body;
 
