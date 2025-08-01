@@ -91,6 +91,10 @@ export async function loginUser(req, res) {
             return res.status(404).json({ message: "User not found" });
         }
         
+        if (user.isBlocked) {
+            return res.status(403).json({ message: "Access denied. Your account has been blocked." });
+        }
+
         if (!user.isVerified) {
             return res.status(401).json({ message: "Email not verified. Please verify your email to login." });
         }
@@ -157,6 +161,9 @@ export async function loginWithGoogle(req, res) {
             });
             await user.save();
         } else {
+            if (user.isBlocked) {
+                return res.status(403).json({ message: "Access denied. Your account has been blocked." });
+            }
             if (!user.isVerified) {
                 user.isVerified = true;
                 await user.save();
@@ -391,6 +398,28 @@ export async function deleteUser(req, res) {
 
     } catch (error) {
         console.error("Delete user error:", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+}
+
+export async function blockUser(req, res) {
+    try {
+        const { email } = req.params;
+        await User.findOneAndUpdate({ email }, { isBlocked: true });
+        res.status(200).json({ message: "User blocked successfully" });
+    } catch (error) {
+        console.error("Block user error:", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+}
+
+export async function unblockUser(req, res) {
+    try {
+        const { email } = req.params;
+        await User.findOneAndUpdate({ email }, { isBlocked: false });
+        res.status(200).json({ message: "User unblocked successfully" });
+    } catch (error) {
+        console.error("Unblock user error:", error);
         res.status(500).json({ message: "Internal server error" });
     }
 }
