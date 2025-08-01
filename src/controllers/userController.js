@@ -311,3 +311,32 @@ export async function resetPassword(req, res) {
         res.status(500).json({ message: "Internal server error" });
     }
 }
+
+export async function updateUser(req, res) {
+    try {
+        const { firstName, lastName, avatar, address, phone } = req.body;
+        const user = await User.findOne({ email: req.user.email });
+
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        user.firstName = firstName || user.firstName;
+        user.lastName = lastName || user.lastName;
+        user.avatar = avatar || user.avatar;
+        user.address = address || user.address;
+        user.phone = phone || user.phone;
+
+        const updatedUser = await user.save();
+        const token = generateToken(updatedUser);
+
+        res.status(200).json({
+            message: "User details updated successfully",
+            token,
+        });
+
+    } catch (error) {
+        console.error("Update user error:", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+}
