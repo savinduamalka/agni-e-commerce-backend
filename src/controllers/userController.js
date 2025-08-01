@@ -2,7 +2,8 @@ import bcrypt from "bcrypt";
 import User from "../models/userModel.js";
 import jwt from "jsonwebtoken";
 import axios from "axios";
-
+import nodemailer from "nodemailer";
+import validator from "validator";
 
 const generateToken = (user) => {
     const userData = {
@@ -25,6 +26,18 @@ export async function createUser(req, res) {
     if (!email || !firstName || !lastName || !password) {
         return res.status(400).json({
             message: "All fields are required",
+        });
+    }
+
+    if (!validator.isEmail(email)) {
+        return res.status(400).json({
+            message: "Invalid email format",
+        });
+    }
+
+    if (!validator.isStrongPassword(password)) {
+        return res.status(400).json({
+            message: "Password is not strong enough. It should be at least 8 characters long and include a mix of uppercase letters, lowercase letters, numbers, and symbols.",
         });
     }
 
@@ -177,3 +190,35 @@ export async function loginWithGoogle(req, res) {
     }
 }
 
+export async function sendOTP(req, res){
+    const transporter=nodemailer.createTransport({
+        service: "gmail",
+        host: "smtp.gmail.com",
+        port: 587,
+        secure: false,
+        requireTLS: true,
+        authMethod: "PLAIN",
+        auth: {
+            user: process.env.EMAIL_USER,
+            pass: process.env.EMAIL_PASS,
+        }
+    });
+
+    const randomOTP=Math.floor(100000+Math.random()*900000);
+    if(!req.body || !req.body.email){
+        return res.status(400).json({message:"Email is required"});
+    }
+    const email=req.body.email;
+    const message={
+        from: process.env.EMAIL_USER,
+        to: email,
+        subject: "OTP for login",
+        text: `Your OTP for login is ${randomOTP}`,
+    }
+    transporter.sendMail(message).then((info)=>{
+        res.status(200).json({message:"OTP sent successfully",otp:randomOTP});
+    }).catch((err)=>{
+        console.error("Failed to send email:", err);
+        res.status(500).json({message:"Failed to send OTP"});
+    })
+}
