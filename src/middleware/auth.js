@@ -1,8 +1,6 @@
 import jwt from "jsonwebtoken";
-import dotenv from "dotenv";
-dotenv.config();
 
-export default function verifyJWT(req, res, next) {
+export function verifyJWT(req, res, next) {
     const header = req.header("Authorization");
 
     if (!header || !header.startsWith("Bearer ")) {
@@ -19,4 +17,12 @@ export default function verifyJWT(req, res, next) {
         req.user = decoded;
         next();
     });
+}
+
+export function isAdmin(req, res, next) {
+    if (req.user && req.user.role === 'admin') {
+        next();
+    } else {
+        res.status(403).json({ message: 'Access denied. You must be an administrator.' });
+    }
 }
