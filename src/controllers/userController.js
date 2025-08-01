@@ -377,3 +377,20 @@ export async function changePassword(req, res) {
         res.status(500).json({ message: "Internal server error" });
     }
 }
+
+export async function deleteUser(req, res) {
+    try {
+        const user = await User.findOne({ email: req.user.email });
+
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        await User.deleteOne({ email: req.user.email });
+        res.status(200).json({ message: "User account deleted successfully" });
+
+    } catch (error) {
+        console.error("Delete user error:", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+}

@@ -9,7 +9,8 @@ import {
     resetPassword,
     requestEmailVerification,
     updateUser,
-    changePassword
+    changePassword,
+    deleteUser
 } from "../controllers/userController.js";
 import { verifyJWT, isAdmin } from "../middleware/auth.js";
 
@@ -26,6 +27,7 @@ userRouter.post("/request-email-verification", requestEmailVerification);
 
 userRouter.get("/me", verifyJWT, getCurrentUser);
 userRouter.put("/me", verifyJWT, updateUser);
+userRouter.delete("/me", verifyJWT, deleteUser);
 userRouter.put("/change-password", verifyJWT, changePassword);
 
 userRouter.get("/admin-only", verifyJWT, isAdmin, (req, res) => {
