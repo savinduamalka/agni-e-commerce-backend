@@ -62,15 +62,9 @@ export async function createUser(req, res) {
         });
 
         const savedUser = await user.save();
-        
-        await sendOTP({
-            email: savedUser.email,
-            subject: "Verify your email address",
-            message: "Please use the following OTP to verify your email address.",
-        });
 
         res.status(201).json({
-            message: "User created successfully. Please check your email to verify your account.",
+            message: "User created successfully. Please verify your email to login.",
             user: {
                 email: savedUser.email,
                 firstName: savedUser.firstName,
@@ -222,7 +216,7 @@ export async function verifyEmail(req, res) {
     }
 }
 
-export async function resendVerificationEmail(req, res) {
+export async function requestEmailVerification(req, res) {
     const { email } = req.body;
 
     if (!email) {
@@ -248,7 +242,7 @@ export async function resendVerificationEmail(req, res) {
         res.status(200).json({ message: "Verification email sent successfully. Please check your email." });
 
     } catch (error) {
-        console.error("Resend verification email error:", error);
+        console.error("Request verification email error:", error);
         res.status(500).json({ message: "Internal server error" });
     }
 }
