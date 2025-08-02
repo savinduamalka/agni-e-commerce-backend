@@ -6,6 +6,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import userRouter from './routes/userRoute.js';
+import categoryRouter from './routes/categoryRoute.js';
 
 const app= express();
 
@@ -22,6 +23,7 @@ app.use(cors());
 app.use(express.json());
 
 app.use("/api/users", userRouter);
+app.use("/api/categories", categoryRouter);
 
 
 const connection = process.env.MONGODB_URL;
