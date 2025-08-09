@@ -136,6 +136,95 @@ export const getActiveProducts = async (req, res) => {
   } catch (error) {
     res
       .status(500)
-      .json({ message: 'Error fetching active products', error: error.message });
+      .json({
+        message: 'Error fetching active products',
+        error: error.message,
+      });
+  }
+};
+
+export const getAllProducts = async (req, res) => {
+  try {
+    const {
+      page = 1,
+      limit = 10,
+      sortBy = 'createdAt',
+      sortOrder = 'desc',
+      category,
+      brand,
+      minPrice,
+      maxPrice,
+      search,
+      isActive,
+    } = req.query;
+
+    const query = {};
+
+    if (search) {
+      query.$text = { $search: search };
+    }
+
+    if (isActive !== undefined) {
+      query.isActive = isActive === 'true';
+    }
+
+    if (category) {
+      const categoryDoc = await Category.findOne({ id: category });
+      if (categoryDoc) {
+        query.category = categoryDoc._id;
+      } else {
+        return res.status(200).json({
+          products: [],
+          totalPages: 0,
+          currentPage: parseInt(page),
+          totalProducts: 0,
+        });
+      }
+    }
+
+    if (brand) {
+      query.brand = { $regex: brand, $options: 'i' };
+    }
+
+    if (minPrice || maxPrice) {
+      query.price = {};
+      if (minPrice) {
+        query.price.$gte = parseFloat(minPrice);
+      }
+      if (maxPrice) {
+        query.price.$lte = parseFloat(maxPrice);
+      }
+    }
+
+    const sortOptions = { [sortBy]: sortOrder === 'asc' ? 1 : -1 };
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    const products = await Product.find(query)
+      .populate('category', 'name id')
+      .sort(sortOptions)
+      .skip(skip)
+      .limit(parseInt(limit));
+
+    const totalProducts = await Product.countDocuments(query);
+    const totalPages = Math.ceil(totalProducts / parseInt(limit));
+
+    const activeProducts = await Product.countDocuments({ isActive: true });
+    const inactiveProducts = await Product.countDocuments({ isActive: false });
+
+    res.status(200).json({
+      products,
+      totalPages,
+      currentPage: parseInt(page),
+      totalProducts,
+      statistics: {
+        activeProducts,
+        inactiveProducts,
+        totalProducts: activeProducts + inactiveProducts,
+      },
+    });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: 'Error fetching all products', error: error.message });
   }
 };
