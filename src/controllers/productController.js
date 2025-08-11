@@ -137,9 +137,9 @@ export const getActiveProducts = async (req, res) => {
     res
       .status(500)
       .json({
-        message: 'Error fetching active products',
-        error: error.message,
-      });
+      message: 'Error fetching active products',
+      error: error.message,
+    });
   }
 };
 
@@ -226,5 +226,34 @@ export const getAllProducts = async (req, res) => {
     res
       .status(500)
       .json({ message: 'Error fetching all products', error: error.message });
+  }
+};
+
+export const deleteProduct = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!id) {
+      return res.status(400).json({ message: 'Product ID is required' });
+    }
+
+    const product = await Product.findOne({ id });
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+
+    await Product.findOneAndDelete({ id });
+
+    res.status(200).json({
+      message: 'Product deleted successfully',
+      deletedProduct: {
+        id: product.id,
+        name: product.name,
+      },
+    });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: 'Error deleting product', error: error.message });
   }
 };
