@@ -134,20 +134,20 @@ export function getCurrentUser(req,res){
 }
 
 export async function loginWithGoogle(req, res) {
-    const { accessToken } = req.body;
+    const { idToken } = req.body;
 
-    if (!accessToken) {
-        return res.status(401).json({ message: "Access token is required" });
+    if (!idToken) {
+        return res.status(401).json({ message: "ID token is required" });
     }
 
     try {
-        const response = await axios.get("https://www.googleapis.com/oauth2/v3/userinfo", {
-            headers: {
-                Authorization: `Bearer ${accessToken}`
-            }
-        });
-
+        const response = await axios.get(`https://oauth2.googleapis.com/tokeninfo?id_token=${idToken}`);
         const googleUser = response.data;
+
+        // Verify the audience to ensure the ID token is for your app
+        if (googleUser.aud !== process.env.GOOGLE_CLIENT_ID) {
+            return res.status(401).json({ message: "Invalid ID token audience" });
+        }
 
         let user = await User.findOne({ email: googleUser.email });
 
@@ -180,7 +180,7 @@ export async function loginWithGoogle(req, res) {
     } catch (error) {
         console.error("Google login error:", error);
         if (error.response && error.response.status === 401) {
-            return res.status(401).json({ message: "Invalid Google access token" });
+            return res.status(401).json({ message: "Invalid Google ID token" });
         }
         res.status(500).json({ message: "Internal server error" });
     }
