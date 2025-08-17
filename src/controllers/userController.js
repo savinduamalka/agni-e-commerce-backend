@@ -194,10 +194,21 @@ export async function verifyEmail(req, res) {
     }
 
     try {
-        const otpRecord = await OTP.findOne({ email });
+        // Find the most recent OTP for this email
+        const otpRecord = await OTP.findOne({ email }).sort({ createdAt: -1 });
 
         if (!otpRecord) {
-            return res.status(400).json({ message: "Invalid OTP" });
+            return res.status(400).json({ message: "No OTP found for this email" });
+        }
+
+        // Check if OTP is expired (should be handled by TTL, but double-check)
+        const now = new Date();
+        const otpAge = now - otpRecord.createdAt;
+        const fiveMinutes = 5 * 60 * 1000; // 5 minutes in milliseconds
+
+        if (otpAge > fiveMinutes) {
+            await OTP.deleteOne({ _id: otpRecord._id });
+            return res.status(400).json({ message: "OTP has expired. Please request a new one." });
         }
 
         const isMatch = await bcrypt.compare(otp, otpRecord.otp);
@@ -207,7 +218,7 @@ export async function verifyEmail(req, res) {
         }
 
         await User.updateOne({ email }, { isVerified: true });
-        await OTP.deleteOne({ email });
+        await OTP.deleteOne({ _id: otpRecord._id });
 
         const user = await User.findOne({ email });
         const token = generateToken(user);
@@ -240,6 +251,9 @@ export async function requestEmailVerification(req, res) {
             return res.status(400).json({ message: "Email is already verified" });
         }
 
+        // Delete any existing OTPs for this email before sending a new one
+        await OTP.deleteMany({ email });
+
         await sendOTP({
             email,
             subject: "Verify your email address",
@@ -266,6 +280,9 @@ export async function requestPasswordReset(req, res) {
         if (!user) {
             return res.status(404).json({ message: "User not found" });
         }
+
+        // Delete any existing OTPs for this email before sending a new one
+        await OTP.deleteMany({ email });
 
         await sendOTP({
             email,
@@ -295,10 +312,21 @@ export async function resetPassword(req, res) {
     }
 
     try {
-        const otpRecord = await OTP.findOne({ email });
+        // Find the most recent OTP for this email
+        const otpRecord = await OTP.findOne({ email }).sort({ createdAt: -1 });
 
         if (!otpRecord) {
-            return res.status(400).json({ message: "Invalid OTP" });
+            return res.status(400).json({ message: "No OTP found for this email" });
+        }
+
+        // Check if OTP is expired (should be handled by TTL, but double-check)
+        const now = new Date();
+        const otpAge = now - otpRecord.createdAt;
+        const fiveMinutes = 5 * 60 * 1000; // 5 minutes in milliseconds
+
+        if (otpAge > fiveMinutes) {
+            await OTP.deleteOne({ _id: otpRecord._id });
+            return res.status(400).json({ message: "OTP has expired. Please request a new one." });
         }
 
         const isMatch = await bcrypt.compare(otp, otpRecord.otp);
@@ -309,7 +337,7 @@ export async function resetPassword(req, res) {
 
         const hashedPassword = bcrypt.hashSync(newPassword, 10);
         await User.updateOne({ email }, { password: hashedPassword });
-        await OTP.deleteOne({ email });
+        await OTP.deleteOne({ _id: otpRecord._id });
 
         res.status(200).json({ message: "Password reset successfully" });
 
