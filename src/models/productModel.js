@@ -58,6 +58,31 @@ const ProductSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    isHot: {
+      type: Boolean,
+      default: false,
+    },
+    isOffer: {
+      type: Boolean,
+      default: false,
+    },
+    offerPercentage: {
+      type: Number,
+      min: 0,
+      max: 100,
+      default: 0,
+    },
+    salesCount: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    brand: {
+      type: String,
+      trim: true,
+    },
+    specifications: [String],
+    features: [String],
   },
   {
     timestamps: true,
@@ -68,6 +93,9 @@ const ProductSchema = new mongoose.Schema(
 ProductSchema.index({ id: 1 });
 ProductSchema.index({ category: 1 });
 ProductSchema.index({ isActive: 1 });
+ProductSchema.index({ isHot: 1 });
+ProductSchema.index({ isOffer: 1 });
+ProductSchema.index({ salesCount: -1 });
 ProductSchema.index({ name: 'text', altNames: 'text', description: 'text' });
 
 const Product = mongoose.model('Product', ProductSchema);
