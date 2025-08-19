@@ -17,6 +17,9 @@ export const createProduct = async (req, res) => {
       specifications,
       features,
       isActive,
+      isHot,
+      isOffer,
+      offerPercentage,
     } = req.body;
 
     if (
@@ -52,6 +55,9 @@ export const createProduct = async (req, res) => {
       specifications,
       features,
       isActive,
+      isHot: isHot || false,
+      isOffer: isOffer || false,
+      offerPercentage: offerPercentage || 0,
     });
 
     await newProduct.save();
