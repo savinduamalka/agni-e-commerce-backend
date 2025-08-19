@@ -263,3 +263,46 @@ export const deleteProduct = async (req, res) => {
       .json({ message: 'Error deleting product', error: error.message });
   }
 };
+
+export const getHotProducts = async (req, res) => {
+  try {
+    const {
+      page = 1,
+      limit = 10,
+      sortBy = 'salesCount',
+      sortOrder = 'desc',
+    } = req.query;
+
+    const query = { 
+      isActive: true,
+      isHot: true 
+    };
+
+    const sortOptions = { [sortBy]: sortOrder === 'asc' ? 1 : -1 };
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    const products = await Product.find(query)
+      .populate('category', 'name id')
+      .sort(sortOptions)
+      .skip(skip)
+      .limit(parseInt(limit));
+
+    const totalProducts = await Product.countDocuments(query);
+    const totalPages = Math.ceil(totalProducts / parseInt(limit));
+
+    res.status(200).json({
+      products,
+      totalPages,
+      currentPage: parseInt(page),
+      totalProducts,
+    });
+  } catch (error) {
+    res
+      .status(500)
+      .json({
+        message: 'Error fetching hot products',
+        error: error.message,
+      });
+  }
+};
+
