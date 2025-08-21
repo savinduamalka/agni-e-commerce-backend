@@ -306,3 +306,58 @@ export const getHotProducts = async (req, res) => {
   }
 };
 
+export const getOfferProducts = async (req, res) => {
+  try {
+    const {
+      page = 1,
+      limit = 10,
+      sortBy = 'offerPercentage',
+      sortOrder = 'desc',
+      minDiscount,
+      maxDiscount,
+    } = req.query;
+
+    const query = { 
+      isActive: true,
+      isOffer: true 
+    };
+
+    // Filter by discount percentage range
+    if (minDiscount || maxDiscount) {
+      query.offerPercentage = {};
+      if (minDiscount) {
+        query.offerPercentage.$gte = parseFloat(minDiscount);
+      }
+      if (maxDiscount) {
+        query.offerPercentage.$lte = parseFloat(maxDiscount);
+      }
+    }
+
+    const sortOptions = { [sortBy]: sortOrder === 'asc' ? 1 : -1 };
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    const products = await Product.find(query)
+      .populate('category', 'name id')
+      .sort(sortOptions)
+      .skip(skip)
+      .limit(parseInt(limit));
+
+    const totalProducts = await Product.countDocuments(query);
+    const totalPages = Math.ceil(totalProducts / parseInt(limit));
+
+    res.status(200).json({
+      products,
+      totalPages,
+      currentPage: parseInt(page),
+      totalProducts,
+    });
+  } catch (error) {
+    res
+      .status(500)
+      .json({
+        message: 'Error fetching offer products',
+        error: error.message,
+      });
+  }
+};
+
