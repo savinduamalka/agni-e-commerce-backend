@@ -396,3 +396,46 @@ export const updateProductHotStatus = async (req, res) => {
   }
 };
 
+export const updateProductOffer = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { isOffer, offerPercentage } = req.body;
+
+    if (typeof isOffer !== 'boolean') {
+      return res.status(400).json({ message: 'isOffer must be a boolean value' });
+    }
+
+    if (isOffer && (offerPercentage < 0 || offerPercentage > 100)) {
+      return res.status(400).json({ 
+        message: 'Offer percentage must be between 0 and 100' 
+      });
+    }
+
+    const product = await Product.findOne({ id });
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+
+    product.isOffer = isOffer;
+    product.offerPercentage = isOffer ? (offerPercentage || 0) : 0;
+    await product.save();
+
+    res.status(200).json({
+      message: `Product ${isOffer ? 'marked as offer' : 'removed from offers'}`,
+      product: {
+        id: product.id,
+        name: product.name,
+        isOffer: product.isOffer,
+        offerPercentage: product.offerPercentage,
+      },
+    });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ 
+        message: 'Error updating product offer', 
+        error: error.message 
+      });
+  }
+};
+
