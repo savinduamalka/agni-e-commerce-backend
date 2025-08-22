@@ -470,3 +470,44 @@ export const incrementSalesCount = async (req, res) => {
   }
 };
 
+export const getProductAnalytics = async (req, res) => {
+  try {
+    const totalProducts = await Product.countDocuments({ isActive: true });
+    const hotProducts = await Product.countDocuments({ isActive: true, isHot: true });
+    const offerProducts = await Product.countDocuments({ isActive: true, isOffer: true });
+    
+    // Get top selling products
+    const topSellingProducts = await Product.find({ isActive: true })
+      .sort({ salesCount: -1 })
+      .limit(10)
+      .select('id name salesCount price');
+
+    // Get products with highest discounts
+    const highestDiscountProducts = await Product.find({ 
+      isActive: true, 
+      isOffer: true 
+    })
+      .sort({ offerPercentage: -1 })
+      .limit(10)
+      .select('id name offerPercentage price labeledPrice');
+
+    res.status(200).json({
+      analytics: {
+        totalProducts,
+        hotProducts,
+        offerProducts,
+        hotProductsPercentage: totalProducts > 0 ? (hotProducts / totalProducts * 100).toFixed(2) : 0,
+        offerProductsPercentage: totalProducts > 0 ? (offerProducts / totalProducts * 100).toFixed(2) : 0,
+      },
+      topSellingProducts,
+      highestDiscountProducts,
+    });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ 
+        message: 'Error fetching product analytics', 
+        error: error.message 
+      });
+  }
+};
