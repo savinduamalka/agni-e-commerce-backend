@@ -439,3 +439,34 @@ export const updateProductOffer = async (req, res) => {
   }
 };
 
+export const incrementSalesCount = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { quantity = 1 } = req.body;
+
+    const product = await Product.findOne({ id });
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+
+    product.salesCount += parseInt(quantity);
+    await product.save();
+
+    res.status(200).json({
+      message: 'Sales count updated successfully',
+      product: {
+        id: product.id,
+        name: product.name,
+        salesCount: product.salesCount,
+      },
+    });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ 
+        message: 'Error updating sales count', 
+        error: error.message 
+      });
+  }
+};
+
