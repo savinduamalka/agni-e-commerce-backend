@@ -22,6 +22,7 @@ import { verifyJWT, isAdmin } from '../middleware/auth.js';
 router.get('/', getActiveProducts);
 router.get('/hot', getHotProducts);
 router.get('/offers', getOfferProducts);
+router.get('/analytics', getProductAnalytics);
 router.get('/hot/category/:category', getHotProductsByCategory);
 router.get('/offers/category/:category', getOffersByCategory);
 
@@ -33,6 +34,7 @@ router.delete('/:id', verifyJWT, isAdmin, deleteProduct);
 // Product management routes
 router.patch('/:id/hot-status', verifyJWT, isAdmin, updateProductHotStatus);
 router.patch('/:id/offer', verifyJWT, isAdmin, updateProductOffer);
+router.patch('/:id/sales-count', incrementSalesCount);
 
 // Bulk operations
 router.patch('/bulk/hot-status', verifyJWT, isAdmin, bulkUpdateHotStatus);
