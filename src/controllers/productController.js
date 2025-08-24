@@ -511,3 +511,205 @@ export const getProductAnalytics = async (req, res) => {
       });
   }
 };
+
+export const getHotProductsByCategory = async (req, res) => {
+  try {
+    const { category } = req.params;
+    const {
+      page = 1,
+      limit = 10,
+      sortBy = 'salesCount',
+      sortOrder = 'desc',
+    } = req.query;
+
+    const categoryDoc = await Category.findOne({ id: category });
+    if (!categoryDoc) {
+      return res.status(404).json({ message: 'Category not found' });
+    }
+
+    const query = { 
+      isActive: true,
+      isHot: true,
+      category: categoryDoc._id
+    };
+
+    const sortOptions = { [sortBy]: sortOrder === 'asc' ? 1 : -1 };
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    const products = await Product.find(query)
+      .populate('category', 'name id')
+      .sort(sortOptions)
+      .skip(skip)
+      .limit(parseInt(limit));
+
+    const totalProducts = await Product.countDocuments(query);
+    const totalPages = Math.ceil(totalProducts / parseInt(limit));
+
+    res.status(200).json({
+      products,
+      totalPages,
+      currentPage: parseInt(page),
+      totalProducts,
+      category: {
+        id: categoryDoc.id,
+        name: categoryDoc.name,
+      },
+    });
+  } catch (error) {
+    res
+      .status(500)
+      .json({
+        message: 'Error fetching hot products by category',
+        error: error.message,
+      });
+  }
+};
+
+export const getOffersByCategory = async (req, res) => {
+  try {
+    const { category } = req.params;
+    const {
+      page = 1,
+      limit = 10,
+      sortBy = 'offerPercentage',
+      sortOrder = 'desc',
+      minDiscount,
+      maxDiscount,
+    } = req.query;
+
+    const categoryDoc = await Category.findOne({ id: category });
+    if (!categoryDoc) {
+      return res.status(404).json({ message: 'Category not found' });
+    }
+
+    const query = { 
+      isActive: true,
+      isOffer: true,
+      category: categoryDoc._id
+    };
+
+    // Filter by discount percentage range
+    if (minDiscount || maxDiscount) {
+      query.offerPercentage = {};
+      if (minDiscount) {
+        query.offerPercentage.$gte = parseFloat(minDiscount);
+      }
+      if (maxDiscount) {
+        query.offerPercentage.$lte = parseFloat(maxDiscount);
+      }
+    }
+
+    const sortOptions = { [sortBy]: sortOrder === 'asc' ? 1 : -1 };
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    const products = await Product.find(query)
+      .populate('category', 'name id')
+      .sort(sortOptions)
+      .skip(skip)
+      .limit(parseInt(limit));
+
+    const totalProducts = await Product.countDocuments(query);
+    const totalPages = Math.ceil(totalProducts / parseInt(limit));
+
+    res.status(200).json({
+      products,
+      totalPages,
+      currentPage: parseInt(page),
+      totalProducts,
+      category: {
+        id: categoryDoc.id,
+        name: categoryDoc.name,
+      },
+    });
+  } catch (error) {
+    res
+      .status(500)
+      .json({
+        message: 'Error fetching offer products by category',
+        error: error.message,
+      });
+  }
+};
+
+export const bulkUpdateHotStatus = async (req, res) => {
+  try {
+    const { productIds, isHot } = req.body;
+
+    if (!Array.isArray(productIds) || productIds.length === 0) {
+      return res.status(400).json({ message: 'Product IDs array is required' });
+    }
+
+    if (typeof isHot !== 'boolean') {
+      return res.status(400).json({ message: 'isHot must be a boolean value' });
+    }
+
+    const result = await Product.updateMany(
+      { id: { $in: productIds } },
+      { isHot }
+    );
+
+    if (result.matchedCount === 0) {
+      return res.status(404).json({ message: 'No products found with the provided IDs' });
+    }
+
+    res.status(200).json({
+      message: `Successfully ${isHot ? 'marked' : 'unmarked'} ${result.modifiedCount} products as hot`,
+      updatedCount: result.modifiedCount,
+      totalRequested: productIds.length,
+    });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ 
+        message: 'Error updating bulk hot status', 
+        error: error.message 
+      });
+  }
+};
+
+export const bulkUpdateOffers = async (req, res) => {
+  try {
+    const { productIds, isOffer, offerPercentage } = req.body;
+
+    if (!Array.isArray(productIds) || productIds.length === 0) {
+      return res.status(400).json({ message: 'Product IDs array is required' });
+    }
+
+    if (typeof isOffer !== 'boolean') {
+      return res.status(400).json({ message: 'isOffer must be a boolean value' });
+    }
+
+    if (isOffer && (offerPercentage < 0 || offerPercentage > 100)) {
+      return res.status(400).json({ 
+        message: 'Offer percentage must be between 0 and 100' 
+      });
+    }
+
+    const updateData = {
+      isOffer,
+      offerPercentage: isOffer ? (offerPercentage || 0) : 0
+    };
+
+    const result = await Product.updateMany(
+      { id: { $in: productIds } },
+      updateData
+    );
+
+    if (result.matchedCount === 0) {
+      return res.status(404).json({ message: 'No products found with the provided IDs' });
+    }
+
+    res.status(200).json({
+      message: `Successfully ${isOffer ? 'marked' : 'unmarked'} ${result.modifiedCount} products as offers`,
+      updatedCount: result.modifiedCount,
+      totalRequested: productIds.length,
+    });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ 
+        message: 'Error updating bulk offers', 
+        error: error.message 
+      });
+  }
+};
