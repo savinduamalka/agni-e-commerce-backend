@@ -81,7 +81,10 @@ const ProductSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
-    specifications: [String],
+    specifications: {
+      type: Object,
+      default: {},
+    },
     features: [String],
   },
   {
