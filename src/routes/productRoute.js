@@ -15,6 +15,7 @@ import {
   bulkUpdateOffers,
   getHotProductsByCategory,
   getOffersByCategory,
+  getProductById,
 } from '../controllers/productController.js';
 import { verifyJWT, isAdmin } from '../middleware/auth.js';
 
@@ -25,6 +26,7 @@ router.get('/offers', getOfferProducts);
 router.get('/analytics', getProductAnalytics);
 router.get('/hot/category/:category', getHotProductsByCategory);
 router.get('/offers/category/:category', getOffersByCategory);
+router.get('/:id', getProductById);
 
 // Admin routes
 router.post('/', verifyJWT, isAdmin, createProduct);
