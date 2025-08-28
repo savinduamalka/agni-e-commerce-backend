@@ -713,3 +713,37 @@ export const bulkUpdateOffers = async (req, res) => {
       });
   }
 };
+
+export const getProductById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!id) {
+      return res.status(400).json({ message: 'Product ID is required' });
+    }
+
+    const product = await Product.findOne({ id })
+      .populate('category', 'name id description');
+
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+
+    // Check if product is active (optional - you can remove this if you want to show inactive products)
+    if (!product.isActive) {
+      return res.status(404).json({ message: 'Product not found or inactive' });
+    }
+
+    res.status(200).json({
+      message: 'Product details retrieved successfully',
+      product,
+    });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ 
+        message: 'Error fetching product details', 
+        error: error.message 
+      });
+  }
+};
