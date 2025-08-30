@@ -86,6 +86,21 @@ const ProductSchema = new mongoose.Schema(
       default: {},
     },
     features: [String],
+    reviews: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Review',
+    }],
+    averageRating: {
+      type: Number,
+      default: 0,
+      min: 0,
+      max: 5,
+    },
+    totalReviews: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
   },
   {
     timestamps: true,
@@ -99,6 +114,8 @@ ProductSchema.index({ isActive: 1 });
 ProductSchema.index({ isHot: 1 });
 ProductSchema.index({ isOffer: 1 });
 ProductSchema.index({ salesCount: -1 });
+ProductSchema.index({ averageRating: -1 });
+ProductSchema.index({ totalReviews: -1 });
 ProductSchema.index({ name: 'text', altNames: 'text', description: 'text' });
 
 const Product = mongoose.model('Product', ProductSchema);
