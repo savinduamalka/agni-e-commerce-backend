@@ -723,7 +723,16 @@ export const getProductById = async (req, res) => {
     }
 
     const product = await Product.findOne({ id })
-      .populate('category', 'name id description');
+      .populate('category', 'name id description')
+      .populate({
+        path: 'reviews',
+        match: { isActive: true },
+        populate: {
+          path: 'user',
+          select: 'firstName lastName avatar'
+        },
+        options: { sort: { createdAt: -1 }, limit: 5 }
+      });
 
     if (!product) {
       return res.status(404).json({ message: 'Product not found' });
