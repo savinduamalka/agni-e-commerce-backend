@@ -34,3 +34,19 @@ export const calculateProductRating = async (productId) => {
   }
 };
 
+// Validate review data
+export const validateReviewData = (rating, comment) => {
+  const errors = [];
+
+  if (!rating || rating < 1 || rating > 5) {
+    errors.push('Rating must be between 1 and 5');
+  }
+
+  if (!comment || comment.trim().length === 0) {
+    errors.push('Comment is required');
+  } else if (comment.trim().length > 500) {
+    errors.push('Comment must be less than 500 characters');
+  }
+
+  return errors;
+};
