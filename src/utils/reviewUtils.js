@@ -50,3 +50,19 @@ export const validateReviewData = (rating, comment) => {
 
   return errors;
 };
+
+// Check if user can review product (hasn't reviewed before)
+export const canUserReviewProduct = async (userId, productId) => {
+  try {
+    const existingReview = await Review.findOne({
+      user: userId,
+      product: productId,
+      isActive: true,
+    });
+
+    return !existingReview;
+  } catch (error) {
+    console.error('Error checking user review eligibility:', error);
+    throw error;
+  }
+};
