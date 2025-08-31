@@ -71,3 +71,63 @@ export const createReview = async (req, res) => {
     });
   }
 };
+
+// Get reviews for a product
+export const getProductReviews = async (req, res) => {
+  try {
+    const { productId } = req.params;
+    const { page = 1, limit = 10, sort = 'createdAt' } = req.query;
+
+    // Validate product exists
+    const product = await Product.findById(productId);
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        message: 'Product not found',
+      });
+    }
+
+    const skip = (page - 1) * limit;
+
+    // Get reviews with pagination and sorting
+    const reviews = await Review.find({
+      product: productId,
+      isActive: true,
+    })
+      .populate('user', 'firstName lastName avatar')
+      .sort({ [sort]: -1 })
+      .skip(skip)
+      .limit(parseInt(limit));
+
+    // Get total count
+    const totalReviews = await Review.countDocuments({
+      product: productId,
+      isActive: true,
+    });
+
+    res.status(200).json({
+      success: true,
+      data: {
+        reviews,
+        pagination: {
+          currentPage: parseInt(page),
+          totalPages: Math.ceil(totalReviews / limit),
+          totalReviews,
+          hasNext: skip + reviews.length < totalReviews,
+          hasPrev: page > 1,
+        },
+        productRating: {
+          averageRating: product.averageRating,
+          totalReviews: product.totalReviews,
+        },
+      },
+    });
+  } catch (error) {
+    console.error('Error getting product reviews:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error.message,
+    });
+  }
+};
