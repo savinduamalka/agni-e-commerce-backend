@@ -3,6 +3,7 @@ const router = Router();
 import {
   createReview,
   getProductReviews,
+  updateReview,
 } from '../controllers/reviewController.js';
 import { verifyJWT } from '../middleware/auth.js';
 
@@ -11,7 +12,9 @@ router.get('/product/:productId', getProductReviews);
 
 // Protected routes (require authentication)
 router.post('/', verifyJWT, createReview);
+router.put('/:reviewId', verifyJWT, updateReview);
 
 
 export default router;
+
 
