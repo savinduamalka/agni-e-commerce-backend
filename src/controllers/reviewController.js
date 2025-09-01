@@ -131,3 +131,71 @@ export const getProductReviews = async (req, res) => {
     });
   }
 };
+
+// Update a review
+export const updateReview = async (req, res) => {
+  try {
+    const { reviewId } = req.params;
+    const { rating, comment } = req.body;
+    const userId = req.user.id;
+
+    // Validate input
+    if (!rating && !comment) {
+      return res.status(400).json({
+        success: false,
+        message: 'Rating or comment is required for update',
+      });
+    }
+
+    if (rating && (rating < 1 || rating > 5)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Rating must be between 1 and 5',
+      });
+    }
+
+    // Find the review
+    const review = await Review.findById(reviewId);
+    if (!review) {
+      return res.status(404).json({
+        success: false,
+        message: 'Review not found',
+      });
+    }
+
+    // Check if user owns the review
+    if (review.user.toString() !== userId) {
+      return res.status(403).json({
+        success: false,
+        message: 'You can only update your own reviews',
+      });
+    }
+
+    // Update the review
+    const updateData = {};
+    if (rating) updateData.rating = rating;
+    if (comment) updateData.comment = comment;
+
+    const updatedReview = await Review.findByIdAndUpdate(
+      reviewId,
+      updateData,
+      { new: true }
+    ).populate('user', 'firstName lastName avatar');
+
+    // Recalculate product rating
+    await calculateProductRating(review.product);
+
+    res.status(200).json({
+      success: true,
+      message: 'Review updated successfully',
+      data: updatedReview,
+    });
+  } catch (error) {
+    console.error('Error updating review:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error.message,
+    });
+  }
+};
