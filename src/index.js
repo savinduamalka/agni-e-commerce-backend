@@ -8,6 +8,7 @@ import rateLimit from 'express-rate-limit';
 import userRouter from './routes/userRoute.js';
 import categoryRouter from './routes/categoryRoute.js';
 import productRouter from './routes/productRoute.js';
+import reviewRouter from './routes/reviewRoute.js';
 
 const app= express();
 
@@ -26,6 +27,7 @@ app.use(express.json());
 app.use("/api/users", userRouter);
 app.use("/api/categories", categoryRouter);
 app.use("/api/products", productRouter);
+app.use("/api/reviews", reviewRouter);
 
 
 const connection = process.env.MONGODB_URL;
