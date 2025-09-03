@@ -247,3 +247,50 @@ export const deleteReview = async (req, res) => {
     });
   }
 };
+
+// Get user's reviews
+export const getUserReviews = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { page = 1, limit = 10 } = req.query;
+
+    const skip = (page - 1) * limit;
+
+    const reviews = await Review.find({
+      user: userId,
+      isActive: true,
+    })
+      .populate('product', 'id name images price')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(parseInt(limit));
+
+    const totalReviews = await Review.countDocuments({
+      user: userId,
+      isActive: true,
+    });
+
+    res.status(200).json({
+      success: true,
+      data: {
+        reviews,
+        pagination: {
+          currentPage: parseInt(page),
+          totalPages: Math.ceil(totalReviews / limit),
+          totalReviews,
+          hasNext: skip + reviews.length < totalReviews,
+          hasPrev: page > 1,
+        },
+      },
+    });
+  } catch (error) {
+    console.error('Error getting user reviews:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error.message,
+    });
+  }
+};
+
+
