@@ -10,10 +10,6 @@ export const calculateProductRating = async (productId) => {
     });
 
     if (reviews.length === 0) {
-      await Product.findByIdAndUpdate(productId, {
-        averageRating: 0,
-        totalReviews: 0,
-      });
       return { averageRating: 0, totalReviews: 0 };
     }
 
@@ -21,11 +17,6 @@ export const calculateProductRating = async (productId) => {
     const averageRating = totalRating / reviews.length;
 
     const roundedRating = Math.round(averageRating * 10) / 10; // Round to 1 decimal place
-
-    await Product.findByIdAndUpdate(productId, {
-      averageRating: roundedRating,
-      totalReviews: reviews.length,
-    });
 
     return { averageRating: roundedRating, totalReviews: reviews.length };
   } catch (error) {
