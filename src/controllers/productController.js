@@ -1,5 +1,6 @@
 import Product from '../models/productModel.js';
 import Category from '../models/categoryModel.js';
+import Review from '../models/reviewModel.js';
 import { generateProductId } from '../utils/productUtils.js';
 
 export const createProduct = async (req, res) => {
@@ -717,22 +718,19 @@ export const bulkUpdateOffers = async (req, res) => {
 export const getProductById = async (req, res) => {
   try {
     const { id } = req.params;
+    const {
+      page = 1,
+      limit = 5,
+      sort = 'createdAt',
+      order = 'desc',
+    } = req.query;
 
     if (!id) {
       return res.status(400).json({ message: 'Product ID is required' });
     }
 
     const product = await Product.findOne({ id })
-      .populate('category', 'name id description')
-      .populate({
-        path: 'reviews',
-        match: { isActive: true },
-        populate: {
-          path: 'user',
-          select: 'firstName lastName avatar'
-        },
-        options: { sort: { createdAt: -1 }, limit: 5 }
-      });
+      .populate('category', 'name id description');
 
     if (!product) {
       return res.status(404).json({ message: 'Product not found' });
@@ -743,9 +741,40 @@ export const getProductById = async (req, res) => {
       return res.status(404).json({ message: 'Product not found or inactive' });
     }
 
+    // Fetch paginated reviews and attach into product.reviews
+    const numericLimit = parseInt(limit);
+    const numericPage = parseInt(page);
+    const skip = (numericPage - 1) * numericLimit;
+
+    const sortOrder = (order === 'asc' ? 1 : -1);
+    const sortObj = { [sort]: sortOrder };
+
+    const [reviews, totalReviewsCount] = await Promise.all([
+      Review.find({ product: product._id, isActive: true })
+        .populate('user', 'firstName lastName avatar')
+        .sort(sortObj)
+        .skip(skip)
+        .limit(numericLimit),
+      Review.countDocuments({ product: product._id, isActive: true }),
+    ]);
+
+    // Create a lean object to safely override reviews for response only
+    const productObj = product.toObject();
+    productObj.reviews = reviews;
+
     res.status(200).json({
       message: 'Product details retrieved successfully',
-      product,
+      product: productObj,
+      reviewsPagination: {
+        currentPage: numericPage,
+        totalPages: Math.ceil(totalReviewsCount / numericLimit) || 1,
+        totalReviews: totalReviewsCount,
+        pageSize: numericLimit,
+        hasNext: skip + reviews.length < totalReviewsCount,
+        hasPrev: numericPage > 1,
+        sortBy: sort,
+        sortOrder: order === 'asc' ? 'asc' : 'desc',
+      },
     });
   } catch (error) {
     res
