@@ -115,3 +115,58 @@ export const getCartStatistics = async (userEmail) => {
     };
   }
 };
+
+/**
+ * Clean up inactive products from cart
+ * @param {string} userEmail - User email
+ * @returns {Object} - Cleanup result
+ */
+export const cleanupInactiveProducts = async (userEmail) => {
+  try {
+    const cart = await Cart.findOne({ user: userEmail })
+      .populate({
+        path: 'items.product',
+        select: 'id isActive'
+      });
+
+    if (!cart) {
+      return {
+        success: true,
+        removedItems: 0,
+        message: 'Cart not found'
+      };
+    }
+
+    const originalItemCount = cart.items.length;
+    const activeItems = cart.items.filter(item => 
+      item.product && item.product.isActive
+    );
+
+    const removedItems = originalItemCount - activeItems.length;
+
+    if (removedItems > 0) {
+      cart.items = activeItems.map(item => ({
+        product: item.product._id,
+        productId: item.product.id,
+        quantity: item.quantity,
+        price: item.price,
+        addedAt: item.addedAt
+      }));
+      
+      await cart.save();
+    }
+
+    return {
+      success: true,
+      removedItems,
+      message: `Removed ${removedItems} inactive products from cart`
+    };
+  } catch (error) {
+    console.error('Error cleaning up inactive products:', error);
+    return {
+      success: false,
+      removedItems: 0,
+      message: 'Error cleaning up cart'
+    };
+  }
+};
