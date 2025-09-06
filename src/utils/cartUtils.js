@@ -213,3 +213,49 @@ export const mergeGuestCart = async (userEmail, guestCartItems) => {
     };
   }
 };
+
+/**
+ * Get cart recommendations based on current items
+ * @param {string} userEmail - User email
+ * @param {number} limit - Number of recommendations
+ * @returns {Array} - Recommended products
+ */
+export const getCartRecommendations = async (userEmail, limit = 5) => {
+  try {
+    const cart = await Cart.findOne({ user: userEmail })
+      .populate({
+        path: 'items.product',
+        select: 'category brand'
+      });
+
+    if (!cart || cart.items.length === 0) {
+      // If cart is empty, return hot products
+      return await Product.find({ isActive: true, isHot: true })
+        .select('id name price labeledPrice images isOffer offerPercentage')
+        .limit(limit)
+        .lean();
+    }
+
+    // Get categories and brands from cart items
+    const categories = [...new Set(cart.items.map(item => item.product.category))];
+    const brands = [...new Set(cart.items.map(item => item.product.brand).filter(Boolean))];
+
+    // Find similar products
+    const recommendations = await Product.find({
+      isActive: true,
+      _id: { $nin: cart.items.map(item => item.product._id) }, // Exclude already in cart
+      $or: [
+        { category: { $in: categories } },
+        { brand: { $in: brands } }
+      ]
+    })
+    .select('id name price labeledPrice images isOffer offerPercentage category brand')
+    .limit(limit)
+    .lean();
+
+    return recommendations;
+  } catch (error) {
+    console.error('Error getting cart recommendations:', error);
+    return [];
+  }
+};
