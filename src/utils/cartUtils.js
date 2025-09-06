@@ -259,3 +259,66 @@ export const getCartRecommendations = async (userEmail, limit = 5) => {
     return [];
   }
 };
+
+/**
+ * Check if cart has any issues (out of stock, price changes, etc.)
+ * @param {string} userEmail - User email
+ * @returns {Object} - Issues found
+ */
+export const checkCartIssues = async (userEmail) => {
+  try {
+    const cart = await Cart.findOne({ user: userEmail })
+      .populate({
+        path: 'items.product',
+        select: 'id name price stock isActive'
+      });
+
+    if (!cart || cart.items.length === 0) {
+      return {
+        hasIssues: false,
+        issues: []
+      };
+    }
+
+    const issues = [];
+
+    for (const item of cart.items) {
+      const product = item.product;
+
+      if (!product || !product.isActive) {
+        issues.push({
+          type: 'inactive_product',
+          productId: item.productId,
+          message: 'Product is no longer available'
+        });
+      } else if (product.stock < item.quantity) {
+        issues.push({
+          type: 'insufficient_stock',
+          productId: item.productId,
+          message: `Only ${product.stock} items available in stock`,
+          requestedQuantity: item.quantity,
+          availableQuantity: product.stock
+        });
+      } else if (product.price !== item.price) {
+        issues.push({
+          type: 'price_changed',
+          productId: item.productId,
+          message: 'Product price has been updated',
+          oldPrice: item.price,
+          newPrice: product.price
+        });
+      }
+    }
+
+    return {
+      hasIssues: issues.length > 0,
+      issues
+    };
+  } catch (error) {
+    console.error('Error checking cart issues:', error);
+    return {
+      hasIssues: false,
+      issues: []
+    };
+  }
+};
