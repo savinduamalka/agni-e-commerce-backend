@@ -7,7 +7,17 @@ import { calculateProductRating, validateReviewData, canUserReviewProduct } from
 export const createReview = async (req, res) => {
   try {
     const { productId, rating, comment } = req.body;
-    const userId = req.user.id; // From JWT token
+    const userEmail = req.user.email; // From JWT token
+    
+    // Get user by email to get their MongoDB _id
+    const user = await User.findOne({ email: userEmail });
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found',
+      });
+    }
+    const userId = user._id;
 
     // Validate input
     const validationErrors = validateReviewData(rating, comment);
@@ -20,7 +30,7 @@ export const createReview = async (req, res) => {
     }
 
     // Check if product exists
-    const product = await Product.findById(productId);
+    const product = await Product.findOne({ id: productId });
     if (!product) {
       return res.status(404).json({
         success: false,
@@ -29,7 +39,7 @@ export const createReview = async (req, res) => {
     }
 
     // Check if user has already reviewed this product
-    const canReview = await canUserReviewProduct(userId, productId);
+    const canReview = await canUserReviewProduct(userId, product._id);
     if (!canReview) {
       return res.status(400).json({
         success: false,
@@ -40,7 +50,7 @@ export const createReview = async (req, res) => {
     // Create the review
     const review = new Review({
       user: userId,
-      product: productId,
+      product: product._id, // Use MongoDB _id instead of custom id
       rating,
       comment,
     });
@@ -49,10 +59,14 @@ export const createReview = async (req, res) => {
 
     // Update product with review reference and recalculate average rating
     product.reviews.push(review._id);
-    await product.save();
-
+    
     // Recalculate average rating and total reviews
-    await calculateProductRating(productId);
+    const ratingData = await calculateProductRating(product._id);
+    
+    // Update product with new rating data
+    product.averageRating = ratingData.averageRating;
+    product.totalReviews = ratingData.totalReviews;
+    await product.save();
 
     // Populate user info for response
     await review.populate('user', 'firstName lastName avatar');
@@ -79,7 +93,7 @@ export const getProductReviews = async (req, res) => {
     const { page = 1, limit = 10, sort = 'createdAt' } = req.query;
 
     // Validate product exists
-    const product = await Product.findById(productId);
+    const product = await Product.findOne({ id: productId });
     if (!product) {
       return res.status(404).json({
         success: false,
@@ -91,7 +105,7 @@ export const getProductReviews = async (req, res) => {
 
     // Get reviews with pagination and sorting
     const reviews = await Review.find({
-      product: productId,
+      product: product._id, // Use MongoDB _id instead of custom id
       isActive: true,
     })
       .populate('user', 'firstName lastName avatar')
@@ -101,7 +115,7 @@ export const getProductReviews = async (req, res) => {
 
     // Get total count
     const totalReviews = await Review.countDocuments({
-      product: productId,
+      product: product._id, // Use MongoDB _id instead of custom id
       isActive: true,
     });
 
@@ -137,7 +151,17 @@ export const updateReview = async (req, res) => {
   try {
     const { reviewId } = req.params;
     const { rating, comment } = req.body;
-    const userId = req.user.id;
+    const userEmail = req.user.email;
+    
+    // Get user by email to get their MongoDB _id
+    const user = await User.findOne({ email: userEmail });
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found',
+      });
+    }
+    const userId = user._id;
 
     // Validate input
     if (!rating && !comment) {
@@ -182,8 +206,12 @@ export const updateReview = async (req, res) => {
       { new: true }
     ).populate('user', 'firstName lastName avatar');
 
-    // Recalculate product rating
-    await calculateProductRating(review.product);
+    // Recalculate product rating and update product
+    const ratingData = await calculateProductRating(review.product);
+    await Product.findByIdAndUpdate(review.product, {
+      averageRating: ratingData.averageRating,
+      totalReviews: ratingData.totalReviews,
+    });
 
     res.status(200).json({
       success: true,
@@ -204,7 +232,17 @@ export const updateReview = async (req, res) => {
 export const deleteReview = async (req, res) => {
   try {
     const { reviewId } = req.params;
-    const userId = req.user.id;
+    const userEmail = req.user.email;
+    
+    // Get user by email to get their MongoDB _id
+    const user = await User.findOne({ email: userEmail });
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found',
+      });
+    }
+    const userId = user._id;
 
     // Find the review
     const review = await Review.findById(reviewId);
@@ -231,8 +269,12 @@ export const deleteReview = async (req, res) => {
       $pull: { reviews: reviewId },
     });
 
-    // Recalculate product rating
-    await calculateProductRating(review.product);
+    // Recalculate product rating and update product
+    const ratingData = await calculateProductRating(review.product);
+    await Product.findByIdAndUpdate(review.product, {
+      averageRating: ratingData.averageRating,
+      totalReviews: ratingData.totalReviews,
+    });
 
     res.status(200).json({
       success: true,
@@ -251,8 +293,18 @@ export const deleteReview = async (req, res) => {
 // Get user's reviews
 export const getUserReviews = async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userEmail = req.user.email;
     const { page = 1, limit = 10 } = req.query;
+    
+    // Get user by email to get their MongoDB _id
+    const user = await User.findOne({ email: userEmail });
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found',
+      });
+    }
+    const userId = user._id;
 
     const skip = (page - 1) * limit;
 
