@@ -170,3 +170,46 @@ export const cleanupInactiveProducts = async (userEmail) => {
     };
   }
 };
+
+/**
+ * Merge guest cart with user cart
+ * @param {string} userEmail - User email
+ * @param {Array} guestCartItems - Guest cart items
+ * @returns {Object} - Merge result
+ */
+export const mergeGuestCart = async (userEmail, guestCartItems) => {
+  try {
+    if (!guestCartItems || guestCartItems.length === 0) {
+      return {
+        success: true,
+        mergedItems: 0,
+        message: 'No guest cart items to merge'
+      };
+    }
+
+    const cart = await Cart.getOrCreateCart(userEmail);
+    let mergedItems = 0;
+
+    for (const guestItem of guestCartItems) {
+      const validation = await validateProductForCart(guestItem.productId, guestItem.quantity);
+      
+      if (validation.isValid) {
+        await cart.addItem(guestItem.productId, validation.product, guestItem.quantity);
+        mergedItems++;
+      }
+    }
+
+    return {
+      success: true,
+      mergedItems,
+      message: `Merged ${mergedItems} items from guest cart`
+    };
+  } catch (error) {
+    console.error('Error merging guest cart:', error);
+    return {
+      success: false,
+      mergedItems: 0,
+      message: 'Error merging guest cart'
+    };
+  }
+};
