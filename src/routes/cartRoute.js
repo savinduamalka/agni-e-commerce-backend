@@ -1,7 +1,8 @@
 import express from 'express';
 import {
   getCart,
-  addToCart
+  addToCart,
+  updateCartItem
 } from '../controllers/cartController.js';
 import { verifyJWT } from '../middleware/auth.js';
 
@@ -12,6 +13,7 @@ cartRouter.use(verifyJWT);
 
 // Cart routes
 cartRouter.get('/', getCart);                    
-cartRouter.post('/add', addToCart);              
+cartRouter.post('/add', addToCart);            
+cartRouter.put('/item/:productId', updateCartItem); 
 
 export default cartRouter;
