@@ -1,5 +1,8 @@
 import express from 'express';
-import {getCart} from '../controllers/cartController.js';
+import {
+  getCart,
+  addToCart
+} from '../controllers/cartController.js';
 import { verifyJWT } from '../middleware/auth.js';
 
 const cartRouter = express.Router();
@@ -8,6 +11,7 @@ const cartRouter = express.Router();
 cartRouter.use(verifyJWT);
 
 // Cart routes
-cartRouter.get('/', getCart);
+cartRouter.get('/', getCart);                    
+cartRouter.post('/add', addToCart);              
 
 export default cartRouter;
