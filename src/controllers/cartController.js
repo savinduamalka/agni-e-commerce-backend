@@ -113,3 +113,68 @@ export const addToCart = async (req, res) => {
     });
   }
 };
+
+// Update item quantity in cart
+export const updateCartItem = async (req, res) => {
+  try {
+    const { productId } = req.params;
+    const { quantity } = req.body;
+    const userEmail = req.user.email;
+
+    if (!productId) {
+      return res.status(400).json({ message: 'Product ID is required' });
+    }
+
+    if (quantity === undefined || quantity < 0) {
+      return res.status(400).json({ message: 'Valid quantity is required' });
+    }
+
+    // Get user's cart
+    const cart = await Cart.findOne({ user: userEmail });
+    
+    if (!cart) {
+      return res.status(404).json({ message: 'Cart not found' });
+    }
+
+    // Check if product exists and is active
+    const product = await Product.findOne({ id: productId, isActive: true });
+    
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found or inactive' });
+    }
+
+    // Check stock availability if quantity > 0
+    if (quantity > 0 && product.stock < quantity) {
+      return res.status(400).json({ 
+        message: `Only ${product.stock} items available in stock` 
+      });
+    }
+
+    // Update item quantity
+    await cart.updateItemQuantity(productId, quantity);
+
+    // Populate the updated cart
+    const updatedCart = await Cart.findById(cart._id)
+      .populate({
+        path: 'items.product',
+        select: 'id name price labeledPrice images isActive isOffer offerPercentage stock'
+      });
+
+    res.status(200).json({
+      message: 'Cart item updated successfully',
+      cart: {
+        user: cart.user,
+        items: updatedCart.items,
+        totalItems: cart.totalItems,
+        totalPrice: cart.totalPrice,
+        lastUpdated: cart.lastUpdated
+      }
+    });
+  } catch (error) {
+    console.error('Update cart item error:', error);
+    res.status(500).json({ 
+      message: 'Error updating cart item', 
+      error: error.message 
+    });
+  }
+};
