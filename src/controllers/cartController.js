@@ -224,3 +224,37 @@ export const removeFromCart = async (req, res) => {
     });
   }
 };
+
+// Clear entire cart
+export const clearCart = async (req, res) => {
+  try {
+    const userEmail = req.user.email;
+
+    // Get user's cart
+    const cart = await Cart.findOne({ user: userEmail });
+    
+    if (!cart) {
+      return res.status(404).json({ message: 'Cart not found' });
+    }
+
+    // Clear cart
+    await cart.clearCart();
+
+    res.status(200).json({
+      message: 'Cart cleared successfully',
+      cart: {
+        user: cart.user,
+        items: [],
+        totalItems: 0,
+        totalPrice: 0,
+        lastUpdated: cart.lastUpdated
+      }
+    });
+  } catch (error) {
+    console.error('Clear cart error:', error);
+    res.status(500).json({ 
+      message: 'Error clearing cart', 
+      error: error.message 
+    });
+  }
+};
