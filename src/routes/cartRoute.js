@@ -3,7 +3,8 @@ import {
   getCart,
   addToCart,
   updateCartItem,
-  removeFromCart
+  removeFromCart,
+  clearCart
 } from '../controllers/cartController.js';
 import { verifyJWT } from '../middleware/auth.js';
 
@@ -17,5 +18,6 @@ cartRouter.get('/', getCart);                    // Get user's cart
 cartRouter.post('/add', addToCart);              // Add item to cart
 cartRouter.put('/item/:productId', updateCartItem); // Update item quantity
 cartRouter.delete('/item/:productId', removeFromCart); // Remove item from cart
+cartRouter.delete('/clear', clearCart);          // Clear entire cart
 
 export default cartRouter;
