@@ -178,3 +178,49 @@ export const updateCartItem = async (req, res) => {
     });
   }
 };
+
+// Remove item from cart
+export const removeFromCart = async (req, res) => {
+  try {
+    const { productId } = req.params;
+    const userEmail = req.user.email;
+
+    if (!productId) {
+      return res.status(400).json({ message: 'Product ID is required' });
+    }
+
+    // Get user's cart
+    const cart = await Cart.findOne({ user: userEmail });
+    
+    if (!cart) {
+      return res.status(404).json({ message: 'Cart not found' });
+    }
+
+    // Remove item from cart
+    await cart.removeItem(productId);
+
+    // Populate the updated cart
+    const updatedCart = await Cart.findById(cart._id)
+      .populate({
+        path: 'items.product',
+        select: 'id name price labeledPrice images isActive isOffer offerPercentage stock'
+      });
+
+    res.status(200).json({
+      message: 'Item removed from cart successfully',
+      cart: {
+        user: cart.user,
+        items: updatedCart.items,
+        totalItems: cart.totalItems,
+        totalPrice: cart.totalPrice,
+        lastUpdated: cart.lastUpdated
+      }
+    });
+  } catch (error) {
+    console.error('Remove from cart error:', error);
+    res.status(500).json({ 
+      message: 'Error removing item from cart', 
+      error: error.message 
+    });
+  }
+};
