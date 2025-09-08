@@ -2,7 +2,8 @@ import express from 'express';
 import {
   getCart,
   addToCart,
-  updateCartItem
+  updateCartItem,
+  removeFromCart
 } from '../controllers/cartController.js';
 import { verifyJWT } from '../middleware/auth.js';
 
@@ -12,8 +13,9 @@ const cartRouter = express.Router();
 cartRouter.use(verifyJWT);
 
 // Cart routes
-cartRouter.get('/', getCart);                    
-cartRouter.post('/add', addToCart);            
-cartRouter.put('/item/:productId', updateCartItem); 
+cartRouter.get('/', getCart);                    // Get user's cart
+cartRouter.post('/add', addToCart);              // Add item to cart
+cartRouter.put('/item/:productId', updateCartItem); // Update item quantity
+cartRouter.delete('/item/:productId', removeFromCart); // Remove item from cart
 
 export default cartRouter;
