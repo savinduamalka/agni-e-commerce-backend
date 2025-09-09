@@ -258,3 +258,39 @@ export const clearCart = async (req, res) => {
     });
   }
 };
+
+// Get cart summary (for quick overview)
+export const getCartSummary = async (req, res) => {
+  try {
+    const userEmail = req.user.email;
+    
+    const cart = await Cart.findOne({ user: userEmail });
+    
+    if (!cart) {
+      return res.status(200).json({
+        message: 'Cart is empty',
+        summary: {
+          totalItems: 0,
+          totalPrice: 0,
+          itemCount: 0
+        }
+      });
+    }
+
+    res.status(200).json({
+      message: 'Cart summary retrieved successfully',
+      summary: {
+        totalItems: cart.totalItems,
+        totalPrice: cart.totalPrice,
+        itemCount: cart.items.length,
+        lastUpdated: cart.lastUpdated
+      }
+    });
+  } catch (error) {
+    console.error('Get cart summary error:', error);
+    res.status(500).json({ 
+      message: 'Error retrieving cart summary', 
+      error: error.message 
+    });
+  }
+};
