@@ -294,3 +294,100 @@ export const getCartSummary = async (req, res) => {
     });
   }
 };
+
+// Validate cart items (check stock and prices)
+export const validateCart = async (req, res) => {
+  try {
+    const userEmail = req.user.email;
+    
+    const cart = await Cart.findOne({ user: userEmail })
+      .populate({
+        path: 'items.product',
+        select: 'id name price stock isActive'
+      });
+    
+    if (!cart || cart.items.length === 0) {
+      return res.status(200).json({
+        message: 'Cart is empty',
+        isValid: true,
+        issues: []
+      });
+    }
+
+    const issues = [];
+    let needsUpdate = false;
+
+    // Check each item
+    for (let i = 0; i < cart.items.length; i++) {
+      const item = cart.items[i];
+      const product = item.product;
+
+      // Check if product is still active
+      if (!product || !product.isActive) {
+        issues.push({
+          type: 'inactive_product',
+          productId: item.productId,
+          message: 'Product is no longer available'
+        });
+        cart.items.splice(i, 1);
+        i--;
+        needsUpdate = true;
+        continue;
+      }
+
+      // Check stock availability
+      if (product.stock < item.quantity) {
+        issues.push({
+          type: 'insufficient_stock',
+          productId: item.productId,
+          message: `Only ${product.stock} items available in stock`,
+          requestedQuantity: item.quantity,
+          availableQuantity: product.stock
+        });
+        
+        // Auto-adjust quantity to available stock
+        item.quantity = product.stock;
+        needsUpdate = true;
+      }
+
+      // Check if price has changed
+      if (product.price !== item.price) {
+        issues.push({
+          type: 'price_changed',
+          productId: item.productId,
+          message: 'Product price has been updated',
+          oldPrice: item.price,
+          newPrice: product.price
+        });
+        
+        // Update price
+        item.price = product.price;
+        needsUpdate = true;
+      }
+    }
+
+    // Save cart if updates were made
+    if (needsUpdate) {
+      await cart.save();
+    }
+
+    res.status(200).json({
+      message: 'Cart validation completed',
+      isValid: issues.length === 0,
+      issues,
+      cart: {
+        user: cart.user,
+        items: cart.items,
+        totalItems: cart.totalItems,
+        totalPrice: cart.totalPrice,
+        lastUpdated: cart.lastUpdated
+      }
+    });
+  } catch (error) {
+    console.error('Validate cart error:', error);
+    res.status(500).json({ 
+      message: 'Error validating cart', 
+      error: error.message 
+    });
+  }
+};
