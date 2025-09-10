@@ -6,6 +6,7 @@ import {
   removeFromCart,
   clearCart,
   getCartSummary,
+  validateCart
 } from '../controllers/cartController.js';
 import { verifyJWT } from '../middleware/auth.js';
 
@@ -17,6 +18,7 @@ cartRouter.use(verifyJWT);
 // Cart routes
 cartRouter.get('/', getCart);                    // Get user's cart
 cartRouter.get('/summary', getCartSummary);      // Get cart summary
+cartRouter.get('/validate', validateCart);       // Validate cart items
 cartRouter.post('/add', addToCart);              // Add item to cart
 cartRouter.put('/item/:productId', updateCartItem); // Update item quantity
 cartRouter.delete('/item/:productId', removeFromCart); // Remove item from cart
