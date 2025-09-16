@@ -26,3 +26,12 @@ export const subscribe = async (req, res) => {
         return res.status(500).json({ message: "Failed to subscribe" });
     }
 };
+
+export const listSubscribers = async (_req, res) => {
+    try {
+        const subscribers = await SubscriptionUser.find({}, { email: 1, createdAt: 1, _id: 0 }).sort({ createdAt: -1 });
+        return res.status(200).json({ data: subscribers });
+    } catch (error) {
+        return res.status(500).json({ message: "Failed to fetch subscribers" });
+    }
+};
