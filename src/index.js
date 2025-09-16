@@ -10,6 +10,7 @@ import categoryRouter from './routes/categoryRoute.js';
 import productRouter from './routes/productRoute.js';
 import reviewRouter from './routes/reviewRoute.js';
 import cartRouter from './routes/cartRoute.js';
+import subscriptionRouter from './routes/subscriptionRoute.js';
 
 const app= express();
 
@@ -30,6 +31,7 @@ app.use("/api/categories", categoryRouter);
 app.use("/api/products", productRouter);
 app.use("/api/reviews", reviewRouter);
 app.use("/api/cart", cartRouter);
+app.use("/api/subscriptions", subscriptionRouter);
 
 
 const connection = process.env.MONGODB_URL;
