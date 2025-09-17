@@ -16,13 +16,16 @@ export const subscribe = async (req, res) => {
 
         const existing = await SubscriptionUser.findOne({ email: normalizedEmail });
         if (existing) {
-            return res.status(200).json({ message: "Already subscribed" });
+            return res.status(409).json({ message: "This email is already subscribed" });
         }
 
         const sub = await SubscriptionUser.create({ email: normalizedEmail });
 
         return res.status(201).json({ message: "Subscribed successfully", data: { email: sub.email } });
     } catch (error) {
+        if (error && error.code === 11000) {
+            return res.status(409).json({ message: "This email is already subscribed" });
+        }
         return res.status(500).json({ message: "Failed to subscribe" });
     }
 };

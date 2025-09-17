@@ -1,5 +1,5 @@
 import express from "express";
-import { subscribe, listSubscribers } from "../controllers/subscriptionController.js";
+import { subscribe, listSubscribers} from "../controllers/subscriptionController.js";
 import { verifyJWT, isAdmin } from "../middleware/auth.js";
 
 const router = express.Router();
