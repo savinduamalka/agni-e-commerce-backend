@@ -11,6 +11,7 @@ import productRouter from './routes/productRoute.js';
 import reviewRouter from './routes/reviewRoute.js';
 import cartRouter from './routes/cartRoute.js';
 import subscriptionRouter from './routes/subscriptionRoute.js';
+import contactUsRouter from './routes/contactUsRoute.js';
 
 const app= express();
 
@@ -32,6 +33,7 @@ app.use("/api/products", productRouter);
 app.use("/api/reviews", reviewRouter);
 app.use("/api/cart", cartRouter);
 app.use("/api/subscriptions", subscriptionRouter);
+app.use("/api/contact", contactUsRouter);
 
 
 const connection = process.env.MONGODB_URL;
