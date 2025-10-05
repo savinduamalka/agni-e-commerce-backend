@@ -28,49 +28,59 @@ const cartItemSchema = new mongoose.Schema({
   },
 });
 
-const cartSchema = new mongoose.Schema({
-  user: {
-    type: String, // Using email as the primary key as per project convention
-    required: true,
-    unique: true,
-    trim: true,
+const cartSchema = new mongoose.Schema(
+  {
+    user: {
+      type: String, // Using email as the primary key as per project convention
+      required: true,
+      unique: true,
+      trim: true,
+    },
+    items: [cartItemSchema],
+    totalItems: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    totalPrice: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    lastUpdated: {
+      type: Date,
+      default: Date.now,
+    },
   },
-  items: [cartItemSchema],
-  totalItems: {
-    type: Number,
-    default: 0,
-    min: 0,
-  },
-  totalPrice: {
-    type: Number,
-    default: 0,
-    min: 0,
-  },
-  lastUpdated: {
-    type: Date,
-    default: Date.now,
-  },
-}, {
-  timestamps: true,
-});
+  {
+    timestamps: true,
+  }
+);
 
 // Index for better performance
-cartSchema.index({ user: 1 });
 cartSchema.index({ 'items.product': 1 });
 cartSchema.index({ lastUpdated: -1 });
 
 // Pre-save middleware to calculate totals
-cartSchema.pre('save', function(next) {
-  this.totalItems = this.items.reduce((total, item) => total + item.quantity, 0);
-  this.totalPrice = this.items.reduce((total, item) => total + (item.price * item.quantity), 0);
+cartSchema.pre('save', function (next) {
+  this.totalItems = this.items.reduce(
+    (total, item) => total + item.quantity,
+    0
+  );
+  this.totalPrice = this.items.reduce(
+    (total, item) => total + item.price * item.quantity,
+    0
+  );
   this.lastUpdated = new Date();
   next();
 });
 
 // Method to add item to cart
-cartSchema.methods.addItem = function(productId, product, quantity = 1) {
-  const existingItemIndex = this.items.findIndex(item => item.productId === productId);
-  
+cartSchema.methods.addItem = function (productId, product, quantity = 1) {
+  const existingItemIndex = this.items.findIndex(
+    (item) => item.productId === productId
+  );
+
   if (existingItemIndex > -1) {
     // Update existing item quantity
     this.items[existingItemIndex].quantity += quantity;
@@ -84,48 +94,48 @@ cartSchema.methods.addItem = function(productId, product, quantity = 1) {
       price: product.price,
     });
   }
-  
+
   return this.save();
 };
 
 // Method to update item quantity
-cartSchema.methods.updateItemQuantity = function(productId, quantity) {
-  const item = this.items.find(item => item.productId === productId);
-  
+cartSchema.methods.updateItemQuantity = function (productId, quantity) {
+  const item = this.items.find((item) => item.productId === productId);
+
   if (!item) {
     throw new Error('Item not found in cart');
   }
-  
+
   if (quantity <= 0) {
-    this.items = this.items.filter(item => item.productId !== productId);
+    this.items = this.items.filter((item) => item.productId !== productId);
   } else {
     item.quantity = quantity;
   }
-  
+
   return this.save();
 };
 
 // Method to remove item from cart
-cartSchema.methods.removeItem = function(productId) {
-  this.items = this.items.filter(item => item.productId !== productId);
+cartSchema.methods.removeItem = function (productId) {
+  this.items = this.items.filter((item) => item.productId !== productId);
   return this.save();
 };
 
 // Method to clear cart
-cartSchema.methods.clearCart = function() {
+cartSchema.methods.clearCart = function () {
   this.items = [];
   return this.save();
 };
 
 // Static method to get or create cart for user
-cartSchema.statics.getOrCreateCart = async function(userEmail) {
+cartSchema.statics.getOrCreateCart = async function (userEmail) {
   let cart = await this.findOne({ user: userEmail });
-  
+
   if (!cart) {
     cart = new this({ user: userEmail });
     await cart.save();
   }
-  
+
   return cart;
 };
 

@@ -86,10 +86,12 @@ const ProductSchema = new mongoose.Schema(
       default: {},
     },
     features: [String],
-    reviews: [{
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Review',
-    }],
+    reviews: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Review',
+      },
+    ],
     averageRating: {
       type: Number,
       default: 0,
@@ -108,7 +110,6 @@ const ProductSchema = new mongoose.Schema(
 );
 
 // Index for better performance
-ProductSchema.index({ id: 1 });
 ProductSchema.index({ category: 1 });
 ProductSchema.index({ isActive: 1 });
 ProductSchema.index({ isHot: 1 });
