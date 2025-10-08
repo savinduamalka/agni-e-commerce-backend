@@ -10,16 +10,17 @@ import categoryRouter from './routes/categoryRoute.js';
 import productRouter from './routes/productRoute.js';
 import reviewRouter from './routes/reviewRoute.js';
 import cartRouter from './routes/cartRoute.js';
+import wishlistRouter from './routes/wishlistRoute.js';
 import subscriptionRouter from './routes/subscriptionRoute.js';
 import contactUsRouter from './routes/contactUsRoute.js';
 
-const app= express();
+const app = express();
 
 const limiter = rateLimit({
-    windowMs: 15 * 60 * 1000, 
-    max: 100, 
-    standardHeaders: true,
-    legacyHeaders: false, 
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
 });
 
 app.use(limiter);
@@ -27,32 +28,28 @@ app.use(helmet());
 app.use(cors());
 app.use(express.json());
 
-app.use("/api/users", userRouter);
-app.use("/api/categories", categoryRouter);
-app.use("/api/products", productRouter);
-app.use("/api/reviews", reviewRouter);
-app.use("/api/cart", cartRouter);
-app.use("/api/subscriptions", subscriptionRouter);
-app.use("/api/contact", contactUsRouter);
+app.use('/api/users', userRouter);
+app.use('/api/categories', categoryRouter);
+app.use('/api/products', productRouter);
+app.use('/api/reviews', reviewRouter);
+app.use('/api/cart', cartRouter);
+app.use('/api/wishlist', wishlistRouter);
+app.use('/api/subscriptions', subscriptionRouter);
+app.use('/api/contact', contactUsRouter);
 
-
-const connection = process.env.MONGODB_URL;
-
-const PORT=process.env.PORT;
-
+const { MONGODB_URL: connection, PORT } = process.env;
 
 app.listen(PORT, () => {
   console.log(`Server is Running on ${PORT}`);
 });
 
-mongoose.connect(connection).then(
-  ()=>{
-    console.log("Database connected successfully");
-  }
-).catch(
-  ()=>{
-    console.log("Database connection failed");
-  }
-)
+mongoose
+  .connect(connection)
+  .then(() => {
+    console.log('Database connected successfully');
+  })
+  .catch(() => {
+    console.log('Database connection failed');
+  });
 
 export default app;
